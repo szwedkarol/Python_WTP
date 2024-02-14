@@ -18,7 +18,7 @@ ztm = warsaw_data_api.ztm(apikey=_MY_API_KEY)  # pass api key
 start_time = time.time()
 
 timespan = 3600  # 60 minutes
-time_delta_for_buses = 75  # 1 minute and 15 seconds
+time_delta_for_buses = 60  # 1 minute
 update_interval = 60  # 1 minute
 
 print("Starting the data import at", datetime.datetime.now())
