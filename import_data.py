@@ -12,6 +12,7 @@ import datetime
 import csv
 import time
 
+filename = "Buses_location_all.csv"
 _MY_API_KEY = "2620c061-1099-44d9-baab-fdc3a772ab29"  # my api key
 ztm = warsaw_data_api.ztm(apikey=_MY_API_KEY)  # pass api key
 
@@ -24,14 +25,14 @@ update_interval = 60  # 1 minute
 print("Starting the data import at", datetime.datetime.now())
 print("Expected to end the data import at", datetime.datetime.now() + datetime.timedelta(seconds=timespan))
 
-with open('Buses_location.csv', 'w', newline='') as file:
+with open(filename, 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(["lines", "latitude", "longitude", "time", "brigade", "vehicle_number"])  # write header
 
 while True:
     try:
         buses_all = ztm.get_buses_location()
-        with open('Buses_location_all.csv', 'a', newline='') as file:
+        with open(filename, 'a', newline='') as file:
             writer = csv.writer(file)
             for bus in buses_all:
                 now = datetime.datetime.now()
