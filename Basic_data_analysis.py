@@ -47,9 +47,9 @@ def calculate_average_speed(filename, bus_line='189'):
     with open(filename, 'r') as file:
         reader = csv.reader(file)
         rows = list(reader)
-        bus_189_rows = [row for row in rows if row[0] == bus_line]
+        bus_rows = [row for row in rows if row[0] == bus_line]
         vehicle_rows = defaultdict(list)
-        for row in bus_189_rows:
+        for row in bus_rows:
             vehicle_rows[row[-1]].append(row)
         for vehicle, rows in vehicle_rows.items():
             if len(rows) < 3:
@@ -68,3 +68,4 @@ def calculate_average_speed(filename, bus_line='189'):
 
 
 calculate_average_speed(bus_gps_file, bus_line='317')
+

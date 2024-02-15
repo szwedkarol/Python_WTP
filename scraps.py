@@ -8,6 +8,7 @@
 # 2620c061-1099-44d9-baab-fdc3a772ab29
 
 import warsaw_data_api
+import csv
 import datetime
 
 _MY_API_KEY = "2620c061-1099-44d9-baab-fdc3a772ab29"  # my api key
@@ -42,3 +43,15 @@ coords_1 = (52.24194, 21.041805)  # 13:15:22
 coords_2 = (52.241966, 21.041813)  # 13:13:14
 
 print(geopy.distance.geodesic(coords_1, coords_2).km)
+
+
+bus_gps_file = "Buses_location_afternoon.csv"
+def get_distinct_sorted_bus_lines(filename):
+    with open(filename, 'r') as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip the header row
+        bus_lines = set(row[0] for row in reader)  # Extract bus lines and remove duplicates
+    return sorted(list(bus_lines))  # Convert to list and sort
+
+
+bus_lines = get_distinct_sorted_bus_lines(bus_gps_file)
