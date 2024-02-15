@@ -3,9 +3,11 @@
 # Python programming course
 # Data analysis of the public bus transit in Warsaw
 
-import datetime
-import csv
 import time
+import csv
+import datetime
+import geopy.distance
+from collections import defaultdict
 
 filename = "Buses_location_all.csv"
 
@@ -29,12 +31,6 @@ with open(filename, 'r') as file:
     reader = csv.reader(file)
     rows = list(reader)
     print(len(set([tuple(row) for row in rows])))
-
-
-import csv
-import datetime
-import geopy.distance
-from collections import defaultdict
 
 def calculate_distance(coords_1, coords_2):
     return geopy.distance.geodesic(coords_1, coords_2).meters  # convert to meters
