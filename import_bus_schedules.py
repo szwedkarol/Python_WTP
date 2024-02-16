@@ -17,4 +17,6 @@ _MY_API_KEY = "2620c061-1099-44d9-baab-fdc3a772ab29"  # my api key
 ztm = warsaw_data_api.ztm(apikey=_MY_API_KEY)  # pass api key
 
 schedule = ztm.get_bus_stop_schedule_by_id("7009", "01", "182")
-print(schedule.rides)
+
+for ride in schedule.rides:
+    print(ride.brigade, ride.time)

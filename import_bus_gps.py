@@ -12,7 +12,8 @@ import datetime
 import csv
 import time
 
-filename = "Buses_location_afternoon.csv"
+
+filename = "Buses_location_rush.csv"
 _MY_API_KEY = "2620c061-1099-44d9-baab-fdc3a772ab29"  # my api key
 ztm = warsaw_data_api.ztm(apikey=_MY_API_KEY)  # pass api key
 
