@@ -37,21 +37,34 @@ ztm = warsaw_data_api.ztm(apikey=_MY_API_KEY)  # pass api key
 #     print(ride)
 
 # Calculate distance between two points with given coordinates
-import geopy.distance
+# import geopy.distance
+#
+# coords_1 = (52.24194, 21.041805)  # 13:15:22
+# coords_2 = (52.241966, 21.041813)  # 13:13:14
+#
+# print(geopy.distance.geodesic(coords_1, coords_2).km)
+#
+#
+# bus_gps_file = "Buses_location_afternoon.csv"
+# def get_distinct_sorted_bus_lines(filename):
+#     with open(filename, 'r') as file:
+#         reader = csv.reader(file)
+#         next(reader)  # Skip the header row
+#         bus_lines = set(row[0] for row in reader)  # Extract bus lines and remove duplicates
+#     return sorted(list(bus_lines))  # Convert to list and sort
+#
+#
+# bus_lines = get_distinct_sorted_bus_lines(bus_gps_file)
 
-coords_1 = (52.24194, 21.041805)  # 13:15:22
-coords_2 = (52.241966, 21.041813)  # 13:13:14
 
-print(geopy.distance.geodesic(coords_1, coords_2).km)
+_BUS_GPS_FILENAME = "Buses_location_afternoon.csv"
 
-
-bus_gps_file = "Buses_location_afternoon.csv"
-def get_distinct_sorted_bus_lines(filename):
-    with open(filename, 'r') as file:
-        reader = csv.reader(file)
-        next(reader)  # Skip the header row
-        bus_lines = set(row[0] for row in reader)  # Extract bus lines and remove duplicates
-    return sorted(list(bus_lines))  # Convert to list and sort
-
-
-bus_lines = get_distinct_sorted_bus_lines(bus_gps_file)
+# Find timestamps that have hour equal to 24
+with open(_BUS_GPS_FILENAME, 'r') as file:
+    reader = csv.reader(file)
+    next(reader)  # Skip the header row
+    for row in reader:
+        timestamp = row[3]  # assuming the timestamp is at index 3
+        hour = timestamp.split(':')[0]  # get the hour part of the timestamp
+        if hour == '24':
+            print(row)
