@@ -18,5 +18,7 @@ ztm = warsaw_data_api.ztm(apikey=_MY_API_KEY)  # pass api key
 
 schedule = ztm.get_bus_stop_schedule_by_id("7040", "06", "108")
 
+ztm.get_bus_stop_schedule_by_name("Banacha-Szpital", "01", "504")
+
 for ride in schedule.rides:
     print(ride.brigade, ride.time)

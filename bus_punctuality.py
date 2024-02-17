@@ -10,11 +10,6 @@ import csv
 import pandas as pd
 import geopy.distance
 
-_MY_API_KEY = "2620c061-1099-44d9-baab-fdc3a772ab29"  # my api key
-_ZTM = warsaw_data_api.ztm(apikey=_MY_API_KEY)  # pass api key
-_BUS_GPS_FILENAME = "Buses_location_afternoon.csv"
-_BUS_STOPS_FILENAME = "bus_line_stops.pkl"
-
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     coords_1 = (lat1, lon1)  # point A
@@ -45,17 +40,23 @@ def get_schedule(stop_id, stop_pole, line):
     return _ZTM.get_bus_stop_schedule_by_id(stop_id, stop_pole, line)
 
 
+def check_if_ride_time_is_valid(ride_time):
+    # Check if ride.time hour is bigger than 23 and if so, change it to 00
+    # (we collected data outside the night)
+    hour = int(ride_time.split(':')[0])
+    if hour > 23:
+        ride_time = '00' + ride_time[2:]
+    return ride_time
+
+
 # Added "bus", "stop" argument for debugging purposes
 def is_matching_entry_in_schedule(bus, stop, schedule, brigade, bus_time, time_threshold=(-3, 20)):
     bus_time = datetime.datetime.strptime(bus_time, '%H:%M:%S')
     for ride in schedule.rides:
-        # Check if ride.time hour is equal to 24/25/26 and if so, change it to 00
-        # (we collected data outside the night)
-        if ride.time.split(':')[0] == '24' or ride.time.split(':')[0] == '25' or ride.time.split(':')[0] == '26':
-            ride.time = '00' + ride.time[2:]
-
+        ride.time = check_if_ride_time_is_valid(ride.time)
         scheduled_time = datetime.datetime.strptime(ride.time, '%H:%M:%S')
         time_difference = (bus_time - scheduled_time).total_seconds() / 60  # in minutes
+
         if time_threshold[0] <= time_difference <= time_threshold[1] and ride.brigade == brigade:
             return True, scheduled_time, time_difference
     return False, None, None
@@ -104,10 +105,14 @@ def calculate_time_difference(results_filename):
     return result
 
 
-_BUS_PUNCTUALITY_RESULTS_FILENAME = "bus_punctuality_results.csv"
+_MY_API_KEY = "2620c061-1099-44d9-baab-fdc3a772ab29"  # my api key
+_ZTM = warsaw_data_api.ztm(apikey=_MY_API_KEY)  # pass api key
+_BUS_GPS_FILENAME = "Buses_location_rush.csv"
+_BUS_STOPS_FILENAME = "bus_line_stops.pkl"
+_BUS_PUNCTUALITY_RESULTS_FILENAME = "bus_punctuality_rush_results.csv"
 bus_punctuality_df = calculate_time_difference(_BUS_PUNCTUALITY_RESULTS_FILENAME)
 print(bus_punctuality_df.head())
 print(bus_punctuality_df.shape)
 
 # Save as a pickle file
-my_pickle_save.save_obj_as_pickle_file(bus_punctuality_df, "bus_punctuality_df.pkl")
+my_pickle_save.save_obj_as_pickle_file(bus_punctuality_df, "bus_punctuality_rush_df.pkl")
