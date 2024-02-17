@@ -10,10 +10,7 @@ import csv
 import pandas as pd
 import geopy.distance
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-from matplotlib.colors import Normalize
-import numpy as np
-from scipy.stats import gaussian_kde
+from heatmap import plot_heatmap_on_map
 
 
 # Calculate distance between two points given as coordinates.
@@ -203,68 +200,17 @@ def plot_avg_time_difference_per_line(time_diff_per_line):
 
     plt.show()
 
+
 # Example of usage
 # Plot the average time difference for each bus line
 # plot_avg_time_difference_per_line(avg_time_difference_per_line)
 # plot_avg_time_difference_per_line(avg_time_difference_per_line_rush)
 
-
-"""
- * INPUT:
-    - "bus_arrival" - a pandas DataFrame containing bus arrival data.
-    - "map_image_path" - a string representing the path to the map image file.
-    - "lat_bounds" - a tuple specifying the minimum and maximum latitude values of the map image.
-    - "lon_bounds" - a tuple specifying the minimum and maximum longitude values of the map image.
- * FUNCTION: Filters out points that do not fit on the map, normalizes the time difference values to a
-    range suitable for color mapping, estimates the density of points, creates a grid of points covering the map, and
-    plots the density as a heatmap. It also plots the points on the map with their color representing the delay.
- * OUTPUT: None. As a side effect displays a heatmap of bus arrival times on a map image. The color on the map
-    represents the time difference of the bus arrival, with 'hot' areas indicating longer delays.
-"""
-def plot_heatmap_on_map(bus_arrival, map_image_path, lat_bounds, lon_bounds):
-    # Load the map image
-    map_img = mpimg.imread(map_image_path)
-
-    # Filter out points that do not fit on the map
-    bus_arrival = bus_arrival[(bus_arrival['latitude'] >= lat_bounds[0]) & (bus_arrival['latitude'] <= lat_bounds[1]) &
-                              (bus_arrival['longitude'] >= lon_bounds[0]) & (bus_arrival['longitude'] <= lon_bounds[1])]
-
-    # Normalize the time difference values to a range suitable for color mapping
-    norm = Normalize(vmin=bus_arrival['time_difference'].min(), vmax=bus_arrival['time_difference'].max())
-
-    # Estimate the density of points
-    xy = np.vstack([bus_arrival['longitude'], bus_arrival['latitude']])
-    z = gaussian_kde(xy)(xy)
-
-    # Create a grid of points covering the map
-    xi, yi = np.mgrid[lon_bounds[0]:lon_bounds[1]:100j, lat_bounds[0]:lat_bounds[1]:100j]
-    zi = gaussian_kde(xy)(np.vstack([xi.flatten(), yi.flatten()]))
-
-    # Create a new figure
-    plt.figure(figsize=(15, 10))
-
-    # Display the map image
-    plt.imshow(map_img, extent=[lon_bounds[0], lon_bounds[1], lat_bounds[0], lat_bounds[1]])
-
-    # Plot the density as a heatmap
-    plt.imshow(zi.reshape(xi.shape), origin='lower', aspect='auto',
-               extent=[lon_bounds[0], lon_bounds[1], lat_bounds[0], lat_bounds[1]],
-               cmap='hot', alpha=0.5)
-
-    # Plot the points
-    plt.scatter(bus_arrival['longitude'], bus_arrival['latitude'], c=z, cmap='hot', norm=norm, alpha=0.5, s=2)
-
-    # Add a color bar
-    plt.colorbar(label='time_difference (in mins)')
-
-    # Show the plot
-    plt.show()
-
-
 # Example of usage:
 warsaw_map_img = "WAW_MAP.png"
 latitude_span = (52.1289, 52.3473)
 longitude_span = (20.7992, 21.2386)
+hotness = 'time_difference'
 
 # Plot as heat map time difference for each record in the dataset on real world map
-plot_heatmap_on_map(bus_punctuality_df, warsaw_map_img, latitude_span, longitude_span)
+plot_heatmap_on_map(bus_punctuality_df, warsaw_map_img, latitude_span, longitude_span, hotness)

@@ -11,65 +11,28 @@ from collections import defaultdict
 import pandas as pd
 import my_pickle_save
 import matplotlib.pyplot as plt
+from heatmap import plot_heatmap_on_map
 
 
-def basic_stats_on_csv_file(filename):
-    # Read csv file and print the first 5 rows
-    with open(filename, 'r') as file:
-        reader = csv.reader(file)
-        for i in range(5):
-            print(next(reader))
-
-    # Count the number of distinct rows in the csv file (disregarding time)
-    with open(filename, 'r') as file:
-        reader = csv.reader(file)
-        rows = list(reader)
-        # Exclude the time column from each row
-        rows_without_time = [(row[0], row[1], row[2], row[4], row[5]) for row in rows]
-        print(len(set(rows_without_time)))
-
-    # Count the number of distinct rows in the csv file (including time)
-    with open(filename, 'r') as file:
-        reader = csv.reader(file)
-        rows = list(reader)
-        print(len(set([tuple(row) for row in rows])))
+_BUS_GPS_FILENAME = "Buses_location_afternoon.csv"
 
 
+# Return distance between two coordinates
 def calculate_distance(coords_1, coords_2):
     return geopy.distance.geodesic(coords_1, coords_2).meters  # convert to meters
 
 
+# Return middle point between two coordinates
+def calculate_avg_coords(coords_1, coords_2):
+    return (coords_1[0] + coords_2[0]) / 2, (coords_1[1] + coords_2[1]) / 2
+
+
+# Calculate time difference between two times. Return time difference in seconds
 def calculate_time_diff(time_1, time_2):
     time_format = "%H:%M:%S"
     t1 = datetime.datetime.strptime(time_1, time_format)
     t2 = datetime.datetime.strptime(time_2, time_format)
-    return (t2 - t1).seconds  # keep as seconds
-
-
-def calculate_average_speed_basic(filename, bus_line):
-    with open(filename, 'r') as file:
-        reader = csv.reader(file)
-        rows = list(reader)
-        bus_rows = [row for row in rows if row[0] == bus_line]
-        vehicle_rows = defaultdict(list)
-        for row in bus_rows:
-            vehicle_rows[row[-1]].append(row)
-        for vehicle, rows in vehicle_rows.items():
-            if len(rows) < 3:
-                print(f"Not enough data to calculate the average speed of vehicle {vehicle}")
-                continue
-            total_distance = 0
-            total_time = 0
-            for i in range(2):
-                coords_1 = (float(rows[i][1]), float(rows[i][2]))
-                coords_2 = (float(rows[i + 1][1]), float(rows[i + 1][2]))
-                total_distance += calculate_distance(coords_1, coords_2)
-                total_time += calculate_time_diff(rows[i][3], rows[i + 1][3])
-            average_speed = total_distance / total_time  # m/s
-            print(
-                f"The average speed of vehicle {vehicle} is {average_speed} m/s, time: {total_time} seconds,"
-                f"distance: {total_distance} meters"
-            )
+    return (t2 - t1).seconds  # Keep as seconds
 
 
 # Returns all rows from a given CSV file that contain passed as parameter "vehicle_nr"
@@ -166,6 +129,82 @@ def calculate_avg_speed(filename, vehicle_nr):
     return total_distance / total_time
 
 
+# Example of usage:
+# avg_speed_line = get_avg_speeds_for_all_vehicles(_BUS_GPS_FILENAME, '317')
+# print(avg_speed_line)
+#
+# _BUS_GPS_FILENAME = "Buses_location_afternoon.csv"
+# basic_stats_on_csv_file(_BUS_GPS_FILENAME)
+# calculate_average_speed_basic(_BUS_GPS_FILENAME, '317')
+
+# Calculate the average speed of all vehicles
+# avg_speeds = calculate_avg_speeds_for_all_vehicles(_BUS_GPS_FILENAME)
+# my_pickle_save.save_obj_as_pickle_file("avg_speeds.pkl", avg_speeds)
+
+
+# How many buses at some point were driving above 50 km/h?
+
+# Create a new DataFrame, with average speed for each consecutive pair of GPS points for a given vehicle
+
+
+def granular_avg_speeds_for_vehicle(filename):
+    with open(filename, 'r') as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip the header
+        rows = list(reader)
+        vehicle_data_dict = defaultdict(list)
+        for row in rows:
+            bus_line = row[0]
+            vehicle_nr = row[-1]
+            coords = (float(row[1]), float(row[2]))
+            new_time = row[3]
+
+            if vehicle_data_dict[vehicle_nr]:
+                last_latitude = vehicle_data_dict[vehicle_nr][-1][4]
+                last_longitude = vehicle_data_dict[vehicle_nr][-1][5]
+                last_time = vehicle_data_dict[vehicle_nr][-1][3]
+                last_coords = (last_latitude, last_longitude)
+                distance = calculate_distance(last_coords, coords)
+                time_diff = calculate_time_diff(last_time, new_time)
+                avg_speed = distance / time_diff if time_diff != 0 else 0  # m/s
+                avg_coords = calculate_avg_coords(last_coords, coords)
+                vehicle_data_dict[vehicle_nr].append(
+                    (bus_line, distance, last_time, new_time, avg_coords[0], avg_coords[1], avg_speed))
+            else:
+                vehicle_data_dict[vehicle_nr].append((bus_line, 0, new_time, new_time, coords[0], coords[1], 0))
+
+        # Flatten the dictionary into a list of lists
+        vehicle_data_list = [[vehicle_nr] + list(data) for vehicle_nr, data_list in vehicle_data_dict.items() for data
+                             in data_list]
+
+        # Create a DataFrame from the list of lists
+        vehicle_data_df = pd.DataFrame(vehicle_data_list, columns=['vehicle_nr', 'bus_line', 'distance_meters',
+                                                                   'time_start', 'time_end', 'latitude', 'longitude',
+                                                                   'avg_speed_mps'])
+
+        return vehicle_data_df
+
+
+granular_speeds = granular_avg_speeds_for_vehicle(_BUS_GPS_FILENAME)
+print(granular_speeds)
+print(granular_speeds.max())
+
+# Count the number of times each vehicle exceeded 25 m/s (90 km/h)
+num_speeding = granular_speeds[granular_speeds['avg_speed_mps'] > 25].groupby('vehicle_nr').size()
+print(num_speeding)
+
+# Remove rows where the average speed is above 25 m/s (90 km/h)
+granular_speeds = granular_speeds[granular_speeds['avg_speed_mps'] <= 25]
+
+# Plot on heatmap the average speed of each vehicle
+warsaw_map_img = "WAW_MAP.png"
+latitude_span = (52.1289, 52.3473)
+longitude_span = (20.7992, 21.2386)
+
+hotness = 'avg_speed_mps'
+plot_heatmap_on_map(granular_speeds, warsaw_map_img, latitude_span, longitude_span, hotness)
+
+
 """
  * INPUT:
     - "filename" - a string representing the name of the CSV file containing bus GPS data.
@@ -208,36 +247,25 @@ def calculate_avg_speeds_for_all_vehicles(filename):
         return vehicle_data_df
 
 
-_BUS_GPS_FILENAME = "Buses_location_afternoon.csv"
 # Example of usage:
-# avg_speed_line = get_avg_speeds_for_all_vehicles(_BUS_GPS_FILENAME, '317')
-# print(avg_speed_line)
+# Total distance traveled by all vehicles
+# avg_speeds = my_pickle_save.load_obj_from_pickle_file("avg_speeds.pkl")
 #
-# _BUS_GPS_FILENAME = "Buses_location_afternoon.csv"
-# basic_stats_on_csv_file(_BUS_GPS_FILENAME)
-# calculate_average_speed_basic(_BUS_GPS_FILENAME, '317')
-
-# Calculate the average speed of all vehicles
-# avg_speeds = calculate_avg_speeds_for_all_vehicles(_BUS_GPS_FILENAME)
-# my_pickle_save.save_obj_as_pickle_file("avg_speeds.pkl", avg_speeds)
-
-avg_speeds = my_pickle_save.load_obj_from_pickle_file("avg_speeds.pkl")
-
-avg_speeds_rush = my_pickle_save.load_obj_from_pickle_file("avg_speeds_rush.pkl")
-
-avg_speeds = avg_speeds.sort_values(by='total_distance_meters', ascending=False)
-avg_speeds_rush = avg_speeds_rush.sort_values(by='total_distance_meters', ascending=False)
-
-print(avg_speeds)
-print(avg_speeds_rush)
-
-# Calculate total distance traveled for all buses
-total_distance = avg_speeds['total_distance_meters'].sum()
-print(total_distance)
-
-# Second dataset
-total_distance_rush = avg_speeds_rush['total_distance_meters'].sum()
-print(total_distance_rush)
+# avg_speeds_rush = my_pickle_save.load_obj_from_pickle_file("avg_speeds_rush.pkl")
+#
+# avg_speeds = avg_speeds.sort_values(by='total_distance_meters', ascending=False)
+# avg_speeds_rush = avg_speeds_rush.sort_values(by='total_distance_meters', ascending=False)
+#
+# print(avg_speeds)
+# print(avg_speeds_rush)
+#
+# # Calculate total distance traveled for all buses
+# total_distance = avg_speeds['total_distance_meters'].sum()
+# print(total_distance)
+#
+# # Second dataset
+# total_distance_rush = avg_speeds_rush['total_distance_meters'].sum()
+# print(total_distance_rush)
 
 # Plot
 # Line plot of the average speed of each bus line
@@ -283,5 +311,5 @@ def plot_avg_speed_per_line(speeds_per_line):
     plt.show()
 
 # Example of usage:
-#avg_speeds_per_line = calculate_avg_speeds_per_line(avg_speeds)
-#plot_avg_speed_per_line(avg_speeds_per_line)
+# avg_speeds_per_line = calculate_avg_speeds_per_line(avg_speeds)
+# plot_avg_speed_per_line(avg_speeds_per_line)
