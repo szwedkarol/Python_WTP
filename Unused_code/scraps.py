@@ -57,7 +57,7 @@ ztm = warsaw_data_api.ztm(apikey=_MY_API_KEY)  # pass api key
 # bus_lines = get_distinct_sorted_bus_lines(bus_gps_file)
 
 
-_BUS_GPS_FILENAME = "Buses_location_afternoon.csv"
+_BUS_GPS_FILENAME = "../Buses_location_afternoon.csv"
 
 # Find timestamps that have hour equal to 24
 with open(_BUS_GPS_FILENAME, 'r') as file:
