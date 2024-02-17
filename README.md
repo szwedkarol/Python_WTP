@@ -5,7 +5,8 @@ This is the repository of my project for the [Python programming course (pol. Ku
 # Brief description
 The goal was to download data using Warsaw Open Data API and then analyze it in regard to speeds of buses and their delays.
 
-Results of the analysis are presented in the form of graphs and tables.
+How the data was imported is described in: [Importing_data_notebook](./Importing_data_notebook.ipynb).\
+Results of the analysis are presented in: [Data_analysis_notebook](./Data_analysis_notebook.ipynb).
 
 # Full description
 Full task description is available in Polish [here](./task_desc.png)
