@@ -16,18 +16,21 @@ import numpy as np
 from scipy.stats import gaussian_kde
 
 
+# Calculate distance between two points given as coordinates.
 def calculate_distance(lat1, lon1, lat2, lon2):
     coords_1 = (lat1, lon1)  # point A
     coords_2 = (lat2, lon2)  # point B
     return geopy.distance.geodesic(coords_1, coords_2).meters  # convert to meters
 
 
+# Read GPS and bus stops data from their respective files.
 def read_data(gps_file, stops_file):
     bus_gps_data = pd.read_csv(gps_file)
     bus_stops_data = my_pickle_save.load_obj_from_pickle_file(stops_file)
     return bus_gps_data, bus_stops_data
 
 
+# Check if a bus is within "distance_threshold" from any of its bus stops.
 def is_bus_near_stop(bus, bus_stops_data, distance_threshold=60):
     bus_line = bus['lines']
     if bus_line in bus_stops_data:
@@ -41,10 +44,12 @@ def is_bus_near_stop(bus, bus_stops_data, distance_threshold=60):
     return False, None
 
 
+# Return a schedule for a given bus stop id, stop pole number, and a bus line.
 def get_schedule(stop_id, stop_pole, line):
     return _ZTM.get_bus_stop_schedule_by_id(stop_id, stop_pole, line)
 
 
+# Change hour value in time stamp so that it is in format 'HH:MM:SS'
 def check_if_ride_time_is_valid(ride_time):
     # Check if ride.time hour is bigger than 23 and if so, change it to 00
     # (we collected data outside the night)
@@ -54,7 +59,20 @@ def check_if_ride_time_is_valid(ride_time):
     return ride_time
 
 
-# Added "bus", "stop" argument for debugging purposes
+"""
+ * INPUT:
+    - "schedule" - a Schedule object containing the bus schedule for a specific stop.
+    - "brigade" - a string representing the brigade number of the bus.
+    - "bus_time" - a string representing the time the bus was at the stop in the format 'HH:MM:SS'.
+    - "time_threshold" - a tuple specifying the minimum and maximum time difference (in minutes) between the actual and
+        scheduled arrival times for a match to be considered valid. Default is (-3, 20).
+ * FUNCTION: Iterates over each ride in the schedule, checks if the brigade number matches, and if so,
+    calculates the delay between the actual and scheduled arrival times. If the time difference is within the specified
+    threshold, it considers it a match.
+ * OUTPUT: Returns a tuple of three elements. The first element is a boolean indicating whether a match was found.
+    The second element is the scheduled time of the matching ride (or None if no match was found).
+    The third element is the delay between the actual and scheduled arrival times (or None if no match was found).
+"""
 def is_matching_entry_in_schedule(schedule, brigade, bus_time, time_threshold=(-3, 20)):
     bus_time = datetime.datetime.strptime(bus_time, '%H:%M:%S')
     for ride in schedule.rides:
@@ -67,6 +85,17 @@ def is_matching_entry_in_schedule(schedule, brigade, bus_time, time_threshold=(-
     return False, None, None
 
 
+"""
+ * INPUT:
+    - "results_filename" - a string representing the name of the CSV file where the results will be written.
+ * FUNCTION: Reads bus GPS data and bus stops data, iterates over each bus in the GPS data, checks if the
+    bus is near a stop, and if so, checks if there is a matching entry in the schedule for the bus. If there is a match,
+    it calculates the time difference between the actual and scheduled arrival times, adds this information to the
+    bus data, and writes the updated bus data to the results file. Thus bus arrival data is created.
+ * OUTPUT: Returns a pandas DataFrame containing the updated bus data with additional columns for the scheduled time,
+    time difference, and stop information. Also, as a side effect, it writes the updated bus data to a CSV file.
+    This way updates are online and in case of a crash, the data is saved.
+"""
 def calculate_time_difference(results_filename):
     bus_gps_data, bus_stops_data = read_data(_BUS_GPS_FILENAME, _BUS_STOPS_FILENAME)
     result = pd.DataFrame(columns=bus_gps_data.columns.tolist() + ['scheduled_time', 'time_difference',
@@ -153,7 +182,14 @@ print("Average time difference for each bus line during rush hours:")
 print(avg_time_difference_per_line_rush.sort_values(ascending=False))
 
 
-# Plot
+"""
+ * INPUT:
+    - "time_diff_per_line" - a pandas Series where the index is the bus line and the value is the average delay for
+        that line.
+ * FUNCTION: This function sorts the input Series in descending order, creates a new figure, and plots the average delay
+    for each bus line.
+ * OUTPUT: None. As a side effect, it displays a line plot of the average delay for each bus line.
+"""
 def plot_avg_time_difference_per_line(time_diff_per_line):
     time_diff_per_line = time_diff_per_line.sort_values(ascending=False)
     plt.figure(figsize=(10, 6))
@@ -179,12 +215,12 @@ def plot_avg_time_difference_per_line(time_diff_per_line):
     - "map_image_path" - a string representing the path to the map image file.
     - "lat_bounds" - a tuple specifying the minimum and maximum latitude values of the map image.
     - "lon_bounds" - a tuple specifying the minimum and maximum longitude values of the map image.
- * FUNCTION: This function filters out points that do not fit on the map, normalizes the time difference values to a
+ * FUNCTION: Filters out points that do not fit on the map, normalizes the time difference values to a
     range suitable for color mapping, estimates the density of points, creates a grid of points covering the map, and
     plots the density as a heatmap. It also plots the points on the map with their color representing the delay.
  * OUTPUT: None. As a side effect displays a heatmap of bus arrival times on a map image. The color on the map
     represents the time difference of the bus arrival, with 'hot' areas indicating longer delays.
- """
+"""
 def plot_heatmap_on_map(bus_arrival, map_image_path, lat_bounds, lon_bounds):
     # Load the map image
     map_img = mpimg.imread(map_image_path)

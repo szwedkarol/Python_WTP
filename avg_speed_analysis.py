@@ -10,6 +10,7 @@ import geopy.distance
 from collections import defaultdict
 import pandas as pd
 import my_pickle_save
+import matplotlib.pyplot as plt
 
 
 def basic_stats_on_csv_file(filename):
@@ -71,6 +72,7 @@ def calculate_average_speed_basic(filename, bus_line):
             )
 
 
+# Returns all rows from a given CSV file that contain passed as parameter "vehicle_nr"
 def get_vehicle_data(filename, vehicle_nr):
     with open(filename, 'r') as file:
         reader = csv.reader(file)
@@ -82,6 +84,7 @@ def get_vehicle_data(filename, vehicle_nr):
         return vehicle_rows
 
 
+# Returns a list of unique vehicle numbers present in the dataset
 def get_vehicle_numbers(filename):
     with open(filename, 'r') as file:
         reader = csv.reader(file)
@@ -90,6 +93,7 @@ def get_vehicle_numbers(filename):
         return list(vehicle_numbers)
 
 
+# Returns a list of vehicle numbers for a given bus line
 def get_vehicle_numbers_for_line(filename, bus_line):
     with open(filename, 'r') as file:
         reader = csv.reader(file)
@@ -99,6 +103,7 @@ def get_vehicle_numbers_for_line(filename, bus_line):
         return list(vehicle_numbers)
 
 
+# Returns a list of tuples with average speed information (across all consecutive GPS points)
 def calculate_avg_speeds(filename, vehicle):
     vehicle_rows = get_vehicle_data(filename, vehicle)
     rows = vehicle_rows[vehicle]
@@ -126,16 +131,16 @@ def get_avg_speeds_for_vehicles_for_line(filename, bus_line):
 
 # Calculate the total distance traveled by a vehicle
 def calculate_total_distance(filename, vehicle_nr):
-    total_distance = 0
+    total_dist = 0
     rows = get_vehicle_data(filename, vehicle_nr)
     if len(rows) < 2:
-        return total_distance
+        return total_dist
     for i in range(len(rows) - 1):
         coords_1 = (float(rows[i][1]), float(rows[i][2]))
         coords_2 = (float(rows[i + 1][1]), float(rows[i + 1][2]))
         distance = calculate_distance(coords_1, coords_2)
-        total_distance += distance
-    return total_distance
+        total_dist += distance
+    return total_dist
 
 
 # Calculate total time traveled by a vehicle
@@ -161,6 +166,14 @@ def calculate_avg_speed(filename, vehicle_nr):
     return total_distance / total_time
 
 
+"""
+ * INPUT:
+    - "filename" - a string representing the name of the CSV file containing bus GPS data.
+ * FUNCTION: Reads the bus GPS data from the CSV file, calculates the total distance traveled and total time spent by
+    each vehicle, and calculates the average speed of each vehicle.
+ * OUTPUT: Returns a pandas DataFrame with the vehicle number as the index and columns for the bus line, total distance
+    (in meters), and total time (in minutes). The DataFrame is sorted by the total distance in descending order.
+"""
 def calculate_avg_speeds_for_all_vehicles(filename):
     with open(filename, 'r') as file:
         reader = csv.reader(file)
@@ -205,15 +218,70 @@ _BUS_GPS_FILENAME = "Buses_location_afternoon.csv"
 # calculate_average_speed_basic(_BUS_GPS_FILENAME, '317')
 
 # Calculate the average speed of all vehicles
-avg_speeds = calculate_avg_speeds_for_all_vehicles(_BUS_GPS_FILENAME)
-my_pickle_save.save_obj_as_pickle_file("avg_speeds.pkl", avg_speeds)
+# avg_speeds = calculate_avg_speeds_for_all_vehicles(_BUS_GPS_FILENAME)
+# my_pickle_save.save_obj_as_pickle_file("avg_speeds.pkl", avg_speeds)
 
 avg_speeds = my_pickle_save.load_obj_from_pickle_file("avg_speeds.pkl")
 
+avg_speeds_rush = my_pickle_save.load_obj_from_pickle_file("avg_speeds_rush.pkl")
+
 avg_speeds = avg_speeds.sort_values(by='total_distance_meters', ascending=False)
+avg_speeds_rush = avg_speeds_rush.sort_values(by='total_distance_meters', ascending=False)
 
-# Remove first row (it's the bus with the most distance traveled)
-avg_speeds = avg_speeds.iloc[1:]
-print(avg_speeds.head())
-my_pickle_save.save_obj_as_pickle_file("avg_speeds.pkl", avg_speeds)
+print(avg_speeds)
+print(avg_speeds_rush)
 
+# Calculate total distance traveled for all buses
+total_distance = avg_speeds['total_distance_meters'].sum()
+print(total_distance)
+
+# Second dataset
+total_distance_rush = avg_speeds_rush['total_distance_meters'].sum()
+print(total_distance_rush)
+
+# Plot
+# Line plot of the average speed of each bus line
+
+
+"""
+ * INPUT:
+    - "avg_speeds_per_vehicle" - a DataFrame containing the total distance traveled and total time spent by each vehicle.
+ * FUNCTION: Groups the DataFrame by the 'bus_line' column, calculates the total distance and total time for each
+    bus line, and then calculates the average speed for each bus line.
+ * OUTPUT: Returns a DataFrame with the bus line as the index and columns for the total distance (in meters),
+    total time (in minutes), and average speed (in km/h).
+"""
+def calculate_avg_speeds_per_line(avg_speeds_per_vehicle):
+    # Group by 'bus_line' and calculate the total distance and total time for each bus line
+    line_data = avg_speeds_per_vehicle.groupby('bus_line').agg({'total_distance_meters': 'sum',
+                                                                'total_time_mins': 'sum'})
+
+    # Calculate the average speed for each bus line in kilometers per hour (km/h)
+    line_data['avg_speed_kph'] = (line_data['total_distance_meters'] / 1000) / (line_data['total_time_mins'] / 60)
+
+    return line_data
+
+
+"""
+ * INPUT:
+    - "speeds_per_line" - a DataFrame with the bus line as the index and a column for the average speed (in km/h).
+ * FUNCTION: Plots the average speed for each bus line.
+ * OUTPUT: None. It creates a line plot of the average speed for each bus line, sorted in descending order by the
+    average speed. The y-axis label is set to 'Average Speed (in km/h)', and the x-axis labels are hidden.
+"""
+def plot_avg_speed_per_line(speeds_per_line):
+    speeds_per_line = speeds_per_line.sort_values(by='avg_speed_kph', ascending=False)
+    plt.figure(figsize=(10, 6))
+    plt.plot(speeds_per_line.index.tolist(), speeds_per_line['avg_speed_kph'].values.tolist())
+    plt.ylabel('Average Speed (in km/h)')
+    plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)  # hide x-axis labels
+
+    # Add horizontal lines
+    for y in range(0, int(speeds_per_line['avg_speed_kph'].max()) + 1, 1):  # change the step size to your preference
+        plt.axhline(y, color='gray', linewidth=0.5)
+
+    plt.show()
+
+# Example of usage:
+#avg_speeds_per_line = calculate_avg_speeds_per_line(avg_speeds)
+#plot_avg_speed_per_line(avg_speeds_per_line)
