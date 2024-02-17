@@ -3,11 +3,13 @@
 # Python programming course
 # Data analysis of the public bus transit in Warsaw
 
-import time
+
 import csv
 import datetime
 import geopy.distance
 from collections import defaultdict
+import pandas as pd
+import my_pickle_save
 
 
 def basic_stats_on_csv_file(filename):
@@ -116,10 +118,10 @@ def calculate_avg_speeds(filename, vehicle):
 
 def get_avg_speeds_for_vehicles_for_line(filename, bus_line):
     vehicle_numbers = get_vehicle_numbers_for_line(filename, bus_line)
-    avg_speeds = {}
+    avg_speeds_for_line = {}
     for vehicle in vehicle_numbers:
-        avg_speeds[vehicle] = calculate_avg_speeds(filename, vehicle)
-    return avg_speeds
+        avg_speeds_for_line[vehicle] = calculate_avg_speeds(filename, vehicle)
+    return avg_speeds_for_line
 
 
 # Calculate the total distance traveled by a vehicle
@@ -152,15 +154,45 @@ def calculate_total_time(filename, vehicle_nr):
 def calculate_avg_speed(filename, vehicle_nr):
     total_distance = calculate_total_distance(filename, vehicle_nr)
     total_time = calculate_total_time(filename, vehicle_nr)
+
+    if total_time == 0:
+        return 0
+
     return total_distance / total_time
 
 
 def calculate_avg_speeds_for_all_vehicles(filename):
-    vehicle_numbers = get_vehicle_numbers(filename)
-    avg_speeds = {}
-    for vehicle in vehicle_numbers:
-        avg_speeds[vehicle] = calculate_avg_speed(filename, vehicle)
-    return avg_speeds
+    with open(filename, 'r') as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip the header
+        rows = list(reader)
+        vehicle_data = {}
+        for row in rows:
+            bus_line = row[0]
+            vehicle_nr = row[-1]
+            coords = (float(row[1]), float(row[2]))
+
+            if vehicle_nr not in vehicle_data:
+                vehicle_data[vehicle_nr] = [bus_line, 0, 0, (coords, row[3])]  # total_distance, total_time, last_row
+            else:
+                last_coords, last_time = vehicle_data[vehicle_nr][3]
+                distance = calculate_distance(last_coords, coords)
+                time_diff = calculate_time_diff(last_time, row[3])
+                vehicle_data[vehicle_nr][1] += distance
+                vehicle_data[vehicle_nr][2] += time_diff
+                vehicle_data[vehicle_nr][3] = (coords, row[3])
+
+        # Convert the vehicle_data dictionary to a list of dictionaries
+        vehicle_data_list = [
+            {'vehicle_nr': vehicle_nr, 'bus_line': data[0], 'total_distance_meters': round(data[1]),
+             'total_time_mins': round(data[2] / 60, 1)}
+            for vehicle_nr, data in vehicle_data.items()]
+
+        # Create a DataFrame from the list of dictionaries
+        vehicle_data_df = pd.DataFrame(vehicle_data_list)
+        vehicle_data_df = vehicle_data_df.set_index('vehicle_nr')
+
+        return vehicle_data_df
 
 
 _BUS_GPS_FILENAME = "Buses_location_afternoon.csv"
@@ -171,4 +203,17 @@ _BUS_GPS_FILENAME = "Buses_location_afternoon.csv"
 # _BUS_GPS_FILENAME = "Buses_location_afternoon.csv"
 # basic_stats_on_csv_file(_BUS_GPS_FILENAME)
 # calculate_average_speed_basic(_BUS_GPS_FILENAME, '317')
+
+# Calculate the average speed of all vehicles
+avg_speeds = calculate_avg_speeds_for_all_vehicles(_BUS_GPS_FILENAME)
+my_pickle_save.save_obj_as_pickle_file("avg_speeds.pkl", avg_speeds)
+
+avg_speeds = my_pickle_save.load_obj_from_pickle_file("avg_speeds.pkl")
+
+avg_speeds = avg_speeds.sort_values(by='total_distance_meters', ascending=False)
+
+# Remove first row (it's the bus with the most distance traveled)
+avg_speeds = avg_speeds.iloc[1:]
+print(avg_speeds.head())
+my_pickle_save.save_obj_as_pickle_file("avg_speeds.pkl", avg_speeds)
 

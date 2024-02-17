@@ -9,6 +9,7 @@ import my_pickle_save
 import csv
 import pandas as pd
 import geopy.distance
+import matplotlib.pyplot as plt
 
 
 def calculate_distance(lat1, lon1, lat2, lon2):
@@ -50,7 +51,7 @@ def check_if_ride_time_is_valid(ride_time):
 
 
 # Added "bus", "stop" argument for debugging purposes
-def is_matching_entry_in_schedule(bus, stop, schedule, brigade, bus_time, time_threshold=(-3, 20)):
+def is_matching_entry_in_schedule(schedule, brigade, bus_time, time_threshold=(-3, 20)):
     bus_time = datetime.datetime.strptime(bus_time, '%H:%M:%S')
     for ride in schedule.rides:
         ride.time = check_if_ride_time_is_valid(ride.time)
@@ -62,7 +63,6 @@ def is_matching_entry_in_schedule(bus, stop, schedule, brigade, bus_time, time_t
     return False, None, None
 
 
-# TODO: Check if works and change "result" dataframe to have more columns (include bus stop data)
 def calculate_time_difference(results_filename):
     bus_gps_data, bus_stops_data = read_data(_BUS_GPS_FILENAME, _BUS_STOPS_FILENAME)
     result = pd.DataFrame(columns=bus_gps_data.columns.tolist() + ['scheduled_time', 'time_difference',
@@ -82,8 +82,9 @@ def calculate_time_difference(results_filename):
             # Pass the stop_id, stop_pole and bus line number to the function
             schedule = get_schedule(stop[0], stop[1], bus['lines'])
 
-            is_match, scheduled_time, time_difference = is_matching_entry_in_schedule(bus, stop, schedule,
-                                                                                      bus['brigade'], bus['time'])
+            is_match, scheduled_time, time_difference = (
+                is_matching_entry_in_schedule(schedule, bus['brigade'], bus['time'])
+            )
 
             if is_match:
                 bus['scheduled_time'] = scheduled_time.time().strftime('%H:%M:%S')
@@ -105,14 +106,64 @@ def calculate_time_difference(results_filename):
     return result
 
 
+# Example of usage:
 _MY_API_KEY = "2620c061-1099-44d9-baab-fdc3a772ab29"  # my api key
 _ZTM = warsaw_data_api.ztm(apikey=_MY_API_KEY)  # pass api key
-_BUS_GPS_FILENAME = "Buses_location_rush.csv"
+_BUS_GPS_FILENAME = "Buses_location_afternoon.csv"
 _BUS_STOPS_FILENAME = "bus_line_stops.pkl"
-_BUS_PUNCTUALITY_RESULTS_FILENAME = "bus_punctuality_rush_results.csv"
-bus_punctuality_df = calculate_time_difference(_BUS_PUNCTUALITY_RESULTS_FILENAME)
-print(bus_punctuality_df.head())
-print(bus_punctuality_df.shape)
+# _BUS_PUNCTUALITY_RESULTS_FILENAME = "bus_punctuality_results.csv"
+# bus_punctuality_df = calculate_time_difference(_BUS_PUNCTUALITY_RESULTS_FILENAME)
+# print(bus_punctuality_df.head())
+# print(bus_punctuality_df.shape)
 
-# Save as a pickle file
-my_pickle_save.save_obj_as_pickle_file(bus_punctuality_df, "bus_punctuality_rush_df.pkl")
+# Load from a csv file
+_BUS_PUNCTUALITY_RUSH_RESULTS_FILENAME = "bus_punctuality_rush_results.csv"
+_BUS_PUNCTUALITY_RESULTS_FILENAME = "bus_punctuality_results.csv"
+
+pd.set_option('display.max_columns', None)  # Display all columns
+
+bus_punctuality_df = pd.read_csv(_BUS_PUNCTUALITY_RESULTS_FILENAME)
+print(bus_punctuality_df.shape)
+# print(bus_punctuality_df.head())
+
+bus_punctuality_rush_df = pd.read_csv(_BUS_PUNCTUALITY_RUSH_RESULTS_FILENAME)
+print(bus_punctuality_rush_df.shape)
+# print(bus_punctuality_rush_df.head())
+
+# Calculate the average time difference for all buses
+avg_time_difference = bus_punctuality_df['time_difference'].mean()
+print("Average time difference for buses:", avg_time_difference)
+
+# Second dataset
+avg_time_difference_rush = bus_punctuality_rush_df['time_difference'].mean()
+print("Average time difference for rush hours:", avg_time_difference_rush)
+
+# Calculate the average time difference for each bus line
+avg_time_difference_per_line = bus_punctuality_df.groupby('lines')['time_difference'].mean()
+print("Average time difference for each bus line:")
+print(avg_time_difference_per_line.sort_values(ascending=False))
+
+# Second dataset
+avg_time_difference_per_line_rush = bus_punctuality_rush_df.groupby('lines')['time_difference'].mean()
+print("Average time difference for each bus line during rush hours:")
+print(avg_time_difference_per_line_rush.sort_values(ascending=False))
+
+
+# Plot
+def plot_avg_time_difference_per_line(time_diff_per_line):
+    time_diff_per_line = time_diff_per_line.sort_values(ascending=False)
+    plt.figure(figsize=(10, 6))
+    plt.plot(time_diff_per_line.index.tolist(), time_diff_per_line.values.tolist())
+    plt.ylabel('time_difference (in mins)')
+    plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)  # hide x-axis labels
+
+    # Add horizontal lines
+    for y in range(0, int(time_diff_per_line.max()) + 1, 1):  # change the step size to your preference
+        plt.axhline(y, color='gray', linewidth=0.5)
+
+    plt.show()
+
+
+# Plot the average time difference for each bus line
+plot_avg_time_difference_per_line(avg_time_difference_per_line)
+plot_avg_time_difference_per_line(avg_time_difference_per_line_rush)
