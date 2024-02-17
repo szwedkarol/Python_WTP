@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from heatmap import plot_heatmap_on_map
 
 
-# Calculate distance between two points given as coordinates.
+# Calculate distance between two points, given as coordinates.
 def calculate_distance(lat1, lon1, lat2, lon2):
     coords_1 = (lat1, lon1)  # point A
     coords_2 = (lat2, lon2)  # point B

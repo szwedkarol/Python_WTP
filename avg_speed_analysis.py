@@ -17,7 +17,7 @@ from heatmap import plot_heatmap_on_map
 _BUS_GPS_FILENAME = "Buses_location_afternoon.csv"
 
 
-# Return distance between two coordinates
+# Return distance between two coordinates.
 def calculate_distance(coords_1, coords_2):
     return geopy.distance.geodesic(coords_1, coords_2).meters  # convert to meters
 

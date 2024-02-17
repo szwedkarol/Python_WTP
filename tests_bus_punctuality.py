@@ -2,7 +2,7 @@
 # 17.02.2024 r.
 # Python programming course
 # Data analysis of the public bus transit in Warsaw
-# Test the bus_punctuality.py module
+# Test the bus_punctuality.py module.
 
 import unittest
 from unittest.mock import patch

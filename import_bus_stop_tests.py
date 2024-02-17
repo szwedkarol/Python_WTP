@@ -2,7 +2,7 @@
 # 17.02.2024 r.
 # Python programming course
 # Data analysis of the public bus transit in Warsaw
-# Test the import_bus_stop.py module
+# Test the import_bus_stop.py module.
 
 import unittest
 import pandas as pd

@@ -12,4 +12,4 @@ Results of the analysis are presented in: [Data_analysis_notebook](./Data_analys
 Full task description is available in Polish [here](./task_desc.png)
 
 ---
-Copyright of the task's description and resources: MIM UW.
+Copyright of the task's description: MIM UW.

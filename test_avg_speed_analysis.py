@@ -2,7 +2,7 @@
 # 17.02.2024 r.
 # Python programming course
 # Data analysis of the public bus transit in Warsaw
-# Test of the "avg_speed_analysis" module
+# Test of the "avg_speed_analysis" module.
 
 import unittest
 from avg_speed_analysis import calculate_distance, calculate_avg_coords, calculate_time_diff

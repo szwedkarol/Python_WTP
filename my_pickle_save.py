@@ -2,7 +2,7 @@
 # 17.02.2024 r.
 # Python programming course
 # Data analysis of the public bus transit in Warsaw
-# My helper functions for saving and loading objects as pickle files
+# My helper functions for saving and loading objects as pickle files.
 
 import pickle
 

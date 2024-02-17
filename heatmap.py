@@ -2,6 +2,7 @@
 # 17.02.2024 r.
 # Python programming course
 # Data analysis of the public bus transit in Warsaw
+# Drawing a heatmap on a real world map.
 
 
 import matplotlib.pyplot as plt
