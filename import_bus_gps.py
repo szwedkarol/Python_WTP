@@ -53,7 +53,6 @@ def import_bus_gps_data(filename, _MY_API_KEY, timespan, time_delta_for_buses, u
 
 # Example of usage:
 # _BUS_GPS_DATA_FILENAME = "Buses_location_afternoon.csv"  # Where GPS data is saved
-# _MY_API_KEY = "2620c061-1099-44d9-baab-fdc3a772ab29"  # My API key
 #
 # timespan = 3600  # 60 minutes
 # time_delta_for_buses = 60  # 1 minute

@@ -137,7 +137,7 @@ def calculate_time_difference(results_filename):
 
 
 # Example of usage:
-_MY_API_KEY = "2620c061-1099-44d9-baab-fdc3a772ab29"  # my api key
+_MY_API_KEY = "REPLACE"  # my api key
 _ZTM = warsaw_data_api.ztm(apikey=_MY_API_KEY)  # pass api key
 _BUS_GPS_FILENAME = "Buses_location_afternoon.csv"
 _BUS_STOPS_FILENAME = "bus_line_stops.pkl"

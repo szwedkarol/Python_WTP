@@ -33,7 +33,7 @@ class TestImportBusStop(unittest.TestCase):
             'direction': ['N', 'S']
         })
 
-        _MY_API_KEY = "2620c061-1099-44d9-baab-fdc3a772ab29"  # My api key
+        _MY_API_KEY = "REPLACE"  # My api key
         _ZTM = warsaw_data_api.ztm(apikey=_MY_API_KEY)  # Pass api key
 
         bus_line_stops = create_dict_matching_bus_stops_to_lines(bus_stops_df, _ZTM)

@@ -4,14 +4,11 @@
 # Data analysis of the public bus transit in Warsaw
 # Scraps of code
 
-# API key
-# 2620c061-1099-44d9-baab-fdc3a772ab29
-
 import warsaw_data_api
 import csv
 import datetime
 
-_MY_API_KEY = "2620c061-1099-44d9-baab-fdc3a772ab29"  # my api key
+_MY_API_KEY = "REPLACE"  # my api key
 ztm = warsaw_data_api.ztm(apikey=_MY_API_KEY)  # pass api key
 
 # lines = ztm.get_lines_for_bus_stop_id("7009", "01")

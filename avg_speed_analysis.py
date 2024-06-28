@@ -202,7 +202,7 @@ latitude_span = (52.1289, 52.3473)
 longitude_span = (20.7992, 21.2386)
 
 hotness = 'avg_speed_mps'
-plot_heatmap_on_map(granular_speeds, warsaw_map_img, latitude_span, longitude_span, hotness)
+#plot_heatmap_on_map(granular_speeds, warsaw_map_img, latitude_span, longitude_span, hotness)
 
 
 """
@@ -249,9 +249,9 @@ def calculate_avg_speeds_for_all_vehicles(filename):
 
 # Example of usage:
 # Total distance traveled by all vehicles
-# avg_speeds = my_pickle_save.load_obj_from_pickle_file("avg_speeds.pkl")
+avg_speeds = my_pickle_save.load_obj_from_pickle_file("avg_speeds.pkl")
 #
-# avg_speeds_rush = my_pickle_save.load_obj_from_pickle_file("avg_speeds_rush.pkl")
+avg_speeds_rush = my_pickle_save.load_obj_from_pickle_file("avg_speeds_rush.pkl")
 #
 # avg_speeds = avg_speeds.sort_values(by='total_distance_meters', ascending=False)
 # avg_speeds_rush = avg_speeds_rush.sort_values(by='total_distance_meters', ascending=False)
@@ -311,5 +311,5 @@ def plot_avg_speed_per_line(speeds_per_line):
     plt.show()
 
 # Example of usage:
-# avg_speeds_per_line = calculate_avg_speeds_per_line(avg_speeds)
-# plot_avg_speed_per_line(avg_speeds_per_line)
+avg_speeds_per_line = calculate_avg_speeds_per_line(avg_speeds)
+plot_avg_speed_per_line(avg_speeds_per_line)
